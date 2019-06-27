@@ -1,0 +1,47 @@
+---
+# tasks file for create-k8s-cluster
+- name: Install pip
+  yum:
+    name: python2-pip
+    state: present
+  become: yes
+
+- name: Install pip prerequisites.
+  pip:
+    name: ['google-auth', 'requests']
+  become: yes
+
+
+- name: Copy Service Account file
+  copy:
+    src: "gcp-service-account.json"
+    dest: "/tmp/service-account.json"
+    mode: 0644
+
+- name: Destroy Kubernetes Cluster if flag 'destroy' == True
+  gcp_container_cluster:
+      name: "{{ k8s_cluster }}"
+      initial_node_count: "{{ node_count }}"
+      zone: "{{ k8s_zone }}"
+      project: "{{ gcloud_project }}"
+      auth_kind: "serviceaccount"
+      service_account_file: "/tmp/service-account.json"
+      state: absent
+  when: destroy == True
+
+- name: Ending playbook after destroying Kubernetes Cluster
+  meta: end_play
+  when: destroy == True
+
+- name: Create Kubernetes Cluster
+  gcp_container_cluster:
+      name: "{{ k8s_cluster }}"
+      initial_node_count: "{{ node_count }}"
+      node_config:
+        machine_type: "{{ node_type }}"
+        disk_size_gb: "{{ disk_size }}"
+      zone: "{{ k8s_zone }}"
+      project: "{{ gcloud_project }}"
+      auth_kind: "serviceaccount"
+      service_account_file: "/tmp/service-account.json"
+      state: present

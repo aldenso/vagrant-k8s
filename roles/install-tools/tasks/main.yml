@@ -1,0 +1,65 @@
+---
+# tasks file for install-tools
+- name: Download gcloud
+  unarchive:
+    src: https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-243.0.0-linux-x86_64.tar.gz
+    dest: /tmp/
+    remote_src: yes
+
+- name: Install gcloud
+  shell: /tmp/google-cloud-sdk/install.sh --quiet
+
+- name: Init gcloud
+  shell: /tmp/google-cloud-sdk/bin/gcloud auth activate-service-account --key-file=/tmp/service-account.json
+
+- name: Set project for gcloud
+  shell: /tmp/google-cloud-sdk/bin/gcloud config set project {{ gcloud_project }}
+
+- name: Download kubectl
+  get_url:
+    url: https://storage.googleapis.com/kubernetes-release/release/{{ kubectl_version }}/bin/linux/amd64/kubectl
+    dest: /usr/local/bin/kubectl
+    mode: 0755
+  become: yes
+
+- name: Download and unarchive helm
+  unarchive:
+    src: https://storage.googleapis.com/kubernetes-helm/helm-v2.13.1-linux-amd64.tar.gz
+    dest: /tmp/
+    remote_src: yes
+    mode: 0755
+  become: yes
+
+- name: Verify is helm is in downloaded path
+  stat:
+    path: /tmp/linux-amd64/helm
+  register: helm_exists
+
+- name: Move helm to binaries path
+  command: mv /tmp/linux-amd64/helm /usr/local/bin/helm
+  when: helm_exists.stat.exists
+  become: yes
+
+- name: Get credentials
+  shell: /tmp/google-cloud-sdk/bin/gcloud container clusters get-credentials {{ k8s_cluster }} --zone={{ k8s_zone }}
+
+- name: Copy Service Account and ClusterRoleBinding file
+  copy:
+    src: rbac-config.yml
+    dest: /tmp/rbac-config.yml
+    mode: 0440
+    backup: yes
+
+- name: Create Service Account and ClusterRoleBinding for tiller
+  shell: kubectl create -f /tmp/rbac-config.yml
+
+- name: Install Tiller
+  shell: helm init --service-account tiller
+
+- name: Pause 45 seconds for tiller pod.
+  pause:
+    seconds: 45
+
+- name: Install ingress controller
+  shell: helm install stable/nginx-ingress --name nginx-ingress --set rbac.create=true
+  when: install_ingress_controller == True

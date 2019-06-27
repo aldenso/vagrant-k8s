@@ -1,0 +1,11 @@
+- hosts: all
+  connection: local
+  gather_facts: yes
+  vars:
+    k8s_cluster: gdcdevops-cluster
+    k8s_zone: us-central1-a
+    gcloud_project: gdcdevops
+    node_count: 2
+    destroy: True
+  roles:
+    - { role: create-k8s-cluster }
