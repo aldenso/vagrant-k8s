@@ -59,6 +59,6 @@ This account can be created in
     IAM & admin
     Service Accounts
     Create Service Account
-        Role: Owner
+        Role: Project/Owner
 
 Then create key in json format and write it to roles/create-k8s-cluster/files/gcp-service-account.json
