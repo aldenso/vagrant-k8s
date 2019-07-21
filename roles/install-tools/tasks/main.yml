@@ -62,4 +62,4 @@
 
 - name: Install ingress controller
   shell: helm install stable/nginx-ingress --name nginx-ingress --set rbac.create=true
-  when: install_ingress_controller == True
+  when: install_ingress_controller == True and install_istio == False

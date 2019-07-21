@@ -1,0 +1,72 @@
+---
+# tasks file for install-istio
+- name: Download and unarchive istio
+  unarchive:
+    src: https://github.com/istio/istio/releases/download/{{ istio_version }}/istio-{{ istio_version }}-linux.tar.gz
+    dest: /tmp/
+    remote_src: yes
+  when: install_istio == True
+
+- name: Get credentials
+  shell: /tmp/google-cloud-sdk/bin/gcloud container clusters get-credentials {{ k8s_cluster }} --zone={{ k8s_zone }}
+  when: install_istio == True
+
+- name: Install the istio-init chart to bootstrap all the Istio’s CRDs
+  shell: helm install /tmp/istio-{{ istio_version }}/install/kubernetes/helm/istio-init --name istio-init --namespace istio-system
+  ignore_errors: yes
+  when: install_istio == True
+
+- name: Install the istio chart profile
+  shell: helm install /tmp/istio-{{ istio_version }}/install/kubernetes/helm/istio --name istio --namespace istio-system  --set grafana.enabled=true --set kiali.enabled=true
+  ignore_errors: yes
+  when: install_istio == True
+
+- name: Convert kiali user to base64
+  shell: "echo {{ kiali_user }} | base64"
+  register: kiali_user_base64
+  when: install_istio == True
+
+- name: Convert kiali password to base64
+  shell: "echo {{ kiali_pass }} | base64"
+  register: kiali_pass_base64
+  when: install_istio == True
+
+- name: Insert Values to kiali secret
+  template:
+    src: "kiali-secret.j2"
+    dest: "/tmp/kiali-secret.yaml"
+    force: yes
+  when: install_istio == True
+
+- name: Apply kiali secret
+  shell: kubectl apply -f /tmp/kiali-secret.yaml
+  when: install_istio == True
+
+- name: Install kiali
+  shell: helm template --set kiali.enabled=true /tmp/istio-{{ istio_version }}/install/kubernetes/helm/istio --name istio --namespace istio-system > /tmp/istio.yaml && kubectl apply -f /tmp/istio.yaml
+  ignore_errors: yes
+  when: install_istio == True
+
+- name: Label default namespace to inject istio
+  shell: kubectl label namespace default istio-injection=enabled
+  when: install_istio == True
+
+- name: Copy yaml templates
+  copy:
+    src: "{{ item }}"
+    dest: /tmp/
+  with_items:
+    - "grafana.yaml"
+    - "kiali.yaml"
+    - "prometheus.yaml"
+    - "tracing-service.yaml"
+  when: install_istio == True
+
+- name: Apply yaml templates
+  shell: "kubectl apply -f {{ item }}"
+  with_items:
+    - "/tmp/grafana.yaml"
+    - "/tmp/kiali.yaml"
+    - "/tmp/prometheus.yaml"
+    - "/tmp/tracing-service.yaml"
+  when: install_istio == True

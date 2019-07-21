@@ -16,10 +16,15 @@ Create/change the playbook file with your configurations.
     node_type: n1-standard-4
     disk_size: 40
     node_count: 2
-    install_ingress_controller: True
+    install_ingress_controller: False
+    install_istio: True
+    istio_version: 1.1.4
+    kiali_user: kiali
+    kiali_pass: password
   roles:
     - { role: create-k8s-cluster }
     - { role: install-tools }
+    - { role: install-istio }
 ```
 
 Run your vagrant file and have your vm and k8s cluster ready.
