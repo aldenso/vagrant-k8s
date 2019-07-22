@@ -67,3 +67,20 @@ This account can be created in
         Role: Project/Owner
 
 Then create key in json format and write it to roles/create-k8s-cluster/files/gcp-service-account.json
+
+## Istio
+
+To access Grafana
+
+Get istio gateway external ip.
+
+```sh
+kubectl get svc istio-ingressgateway -o=custom-columns=NAME:.metadata.name,EXTERNAL-IP:.status.loadBalancer.ingress[*].ip -n istio-system
+```
+
+```txt
+NAME                   EXTERNAL-IP
+istio-ingressgateway   35.232.36.158
+```
+
+Open browser with the ip and port 1031
