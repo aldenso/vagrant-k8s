@@ -49,6 +49,7 @@
 
 - name: Label default namespace to inject istio
   shell: kubectl label namespace default istio-injection=enabled
+  ignore_errors: yes
   when: install_istio == True
 
 - name: Copy yaml templates

@@ -1,0 +1,73 @@
+---
+# tasks file for flagger
+- name: create a managed zone
+  gcp_dns_managed_zone:
+    name: "{{ managed_zone_name }}"
+    dns_name: "{{ domain }}."
+    description: "{{ managed_zone_description }}"
+    project: "{{ gcloud_project }}"
+    auth_kind: serviceaccount
+    service_account_file: "/tmp/service-account.json"
+    state: present
+  register: created_managed_zone
+
+- name: Get istio-ingressgateway ip
+  shell: kubectl -n istio-system get svc/istio-ingressgateway -ojson | jq -r .status.loadBalancer.ingress[0].ip
+  register: gateway_ip
+
+- name: create a address
+  gcp_compute_address:
+    name: istio-gateway
+    address: "{{ gateway_ip.stdout }}"
+    region: "{{ k8s_region }}"
+    project: "{{ gcloud_project }}"
+    auth_kind: serviceaccount
+    service_account_file: "/tmp/service-account.json"
+    state: present
+
+- name: create a resource record set
+  gcp_dns_resource_record_set:
+    name: "{{ domain }}."
+    managed_zone: "{{ created_managed_zone }}"
+    type: A
+    ttl: 600
+    target:
+    - "{{ gateway_ip.stdout }}"
+    project: "{{ gcloud_project }}"
+    auth_kind: serviceaccount
+    service_account_file: "/tmp/service-account.json"
+    state: present
+  with_items:
+    - "{{ domain }}"
+    - "www.{{ domain }}"
+    - "*.{{ domain }}"
+  ignore_errors: yes
+
+- name: Add flagger repo
+  shell: helm repo add flagger https://flagger.app
+  ignore_errors: yes
+
+- name: Apply CRD for flagger
+  shell: kubectl apply -f https://raw.githubusercontent.com/weaveworks/flagger/master/artifacts/flagger/crd.yaml
+
+- name: Install grafana flagger
+  shell: helm upgrade -i flagger flagger/flagger --namespace=istio-system --set crd.create=false --set metricsServer=http://prometheus.istio-system:9090
+  ignore_errors: yes
+
+- name: Install flagger
+  shell: helm upgrade -i flagger-grafana flagger/grafana --namespace=istio-system --set url=http://prometheus.istio-system:9090
+  ignore_errors: yes
+
+- name: Copy yaml templates
+  copy:
+    src: "{{ item }}"
+    dest: /tmp/
+  with_items:
+    - "public-gateway.yml"
+    - "grafana-virtualservice.yml"
+
+- name: Apply yaml templates
+  shell: "kubectl apply -f {{ item }}"
+  with_items:
+    - "/tmp/public-gateway.yml"
+    - "/tmp/grafana-virtualservice.yml"

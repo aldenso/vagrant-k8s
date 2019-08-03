@@ -1,8 +1,8 @@
 ---
 # tasks file for create-k8s-cluster
-- name: Install pip
+- name: Install software
   yum:
-    name: python2-pip
+    name: [ "python2-pip", "jq" ]
     state: present
   become: yes
 
