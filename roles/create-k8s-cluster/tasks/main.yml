@@ -29,6 +29,23 @@
       state: absent
   when: destroy == True
 
+- name: Pause 120 seconds for cluster to release IP Address.
+  pause:
+    seconds: 120
+  when: destroy == True
+
+- name: delete external address
+  gcp_compute_address:
+    name: istio-gateway
+    address: "{{ gateway_ip.stdout }}"
+    region: "{{ k8s_region }}"
+    project: "{{ gcloud_project }}"
+    auth_kind: serviceaccount
+    service_account_file: "/tmp/service-account.json"
+    state: absent
+  when: destroy == True
+  ignore_errors: yes
+
 - name: Ending playbook after destroying Kubernetes Cluster
   meta: end_play
   when: destroy == True

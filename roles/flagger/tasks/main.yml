@@ -24,6 +24,7 @@
     auth_kind: serviceaccount
     service_account_file: "/tmp/service-account.json"
     state: present
+  ignore_errors: yes
 
 - name: create a resource record set
   gcp_dns_resource_record_set:
@@ -65,9 +66,11 @@
   with_items:
     - "public-gateway.yml"
     - "grafana-virtualservice.yml"
+    - "load-tester.yml"
 
 - name: Apply yaml templates
   shell: "kubectl apply -f {{ item }}"
   with_items:
     - "/tmp/public-gateway.yml"
     - "/tmp/grafana-virtualservice.yml"
+    - "/tmp/load-tester.yml"

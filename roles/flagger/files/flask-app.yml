@@ -1,0 +1,85 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: default
+  name: myflask
+  labels:
+    app: myflask
+    # service: myflask
+spec:
+  ports:
+  - port: 8080
+    name: http-web
+  selector:
+    app: myflask
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  namespace: default
+  name: myflask
+  labels:
+    app: myflask
+    # version: web-v1
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: myflask
+        # version: web-v1
+    spec:
+      containers:
+      - name: myflask
+        image: gcr.io/gdcdevops/flask-sample:1.0.0
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 256Mi
+          requests:
+            cpu: 100m
+            memory: 64Mi
+---
+apiVersion: autoscaling/v2beta1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: myflask
+  namespace: default
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: myflask
+  minReplicas: 1
+  maxReplicas: 4
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      # scale up if usage is above
+      # 99% of the requested CPU (100m)
+      targetAverageUtilization: 80
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  namespace: default
+  name: myflask
+spec:
+  hosts:
+  - "myflask.aldenso.com"
+  gateways:
+  - public-gateway.istio-system.svc.cluster.local
+  http:
+  - match:
+    - uri:
+        exact: /myapp
+    route:
+    - destination:
+        host: myflask
+        port:
+          number: 8080
