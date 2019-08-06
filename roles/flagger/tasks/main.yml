@@ -11,6 +11,10 @@
     state: present
   register: created_managed_zone
 
+- name: Pause 30 seconds for ingress gateway.
+  pause:
+    seconds: 30
+
 - name: Get istio-ingressgateway ip
   shell: kubectl -n istio-system get svc/istio-ingressgateway -ojson | jq -r .status.loadBalancer.ingress[0].ip
   register: gateway_ip

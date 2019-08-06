@@ -37,7 +37,6 @@
 - name: delete external address
   gcp_compute_address:
     name: istio-gateway
-    address: "{{ gateway_ip.stdout }}"
     region: "{{ k8s_region }}"
     project: "{{ gcloud_project }}"
     auth_kind: serviceaccount
