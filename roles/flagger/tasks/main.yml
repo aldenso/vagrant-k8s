@@ -28,7 +28,7 @@
 
 - name: create a resource record set
   gcp_dns_resource_record_set:
-    name: "{{ domain }}."
+    name: "{{ item }}."
     managed_zone: "{{ created_managed_zone }}"
     type: A
     ttl: 600
