@@ -36,9 +36,9 @@ spec:
     threshold: 2
     # canary match condition
     match:
-      # - headers:
-      #     user-agent:
-      #       regex: "^(?!.*Chrome).*Safari.*"
+      - headers:
+          user-agent:
+            regex: "^(?!.*Chrome).*Safari.*"
       - headers:
           cookie:
             regex: "^(.*?;)?(type=insider)(;.*)?$"
