@@ -16,10 +16,15 @@ Create/change the playbook file with your configurations.
     node_type: n1-standard-4
     disk_size: 40
     node_count: 2
-    install_ingress_controller: True
+    install_ingress_controller: False
+    install_istio: True
+    istio_version: 1.1.4
+    kiali_user: kiali
+    kiali_pass: password
   roles:
     - { role: create-k8s-cluster }
     - { role: install-tools }
+    - { role: install-istio }
 ```
 
 Run your vagrant file and have your vm and k8s cluster ready.
@@ -62,3 +67,20 @@ This account can be created in
         Role: Project/Owner
 
 Then create key in json format and write it to roles/create-k8s-cluster/files/gcp-service-account.json
+
+## Istio
+
+To access Grafana
+
+Get istio gateway external ip.
+
+```sh
+kubectl get svc istio-ingressgateway -o=custom-columns=NAME:.metadata.name,EXTERNAL-IP:.status.loadBalancer.ingress[*].ip -n istio-system
+```
+
+```txt
+NAME                   EXTERNAL-IP
+istio-ingressgateway   35.232.36.158
+```
+
+Open browser with the ip and port 1031

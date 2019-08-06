@@ -52,6 +52,7 @@
 
 - name: Create Service Account and ClusterRoleBinding for tiller
   shell: kubectl create -f /tmp/rbac-config.yml
+  ignore_errors: yes
 
 - name: Install Tiller
   shell: helm init --service-account tiller
@@ -62,4 +63,4 @@
 
 - name: Install ingress controller
   shell: helm install stable/nginx-ingress --name nginx-ingress --set rbac.create=true
-  when: install_ingress_controller == True
+  when: install_ingress_controller == True and install_istio == False
